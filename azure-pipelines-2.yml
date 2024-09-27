@@ -1,0 +1,40 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+steps:
+# Login to Azure Container Registry
+- task: AzureCLI@2
+  inputs:
+    azureSubscription: 'Azure_Pipelines'
+    scriptType: 'bash'
+    scriptLocation: 'inlineScript'
+    inlineScript: |
+      az acr login --name dccloudacr
+  displayName: 'Login to Azure Container Registry'
+
+# Build and Push Docker image to ACR
+- task: Docker@2
+  inputs:
+    containerRegistry: 'ACRConnection'
+    repository: 'dccloudacr/dccloudapp'
+    command: 'buildAndPush'
+    Dockerfile: '**/Dockerfile'
+    tags: |
+      $(Build.BuildId)
+  displayName: 'Build and Push Docker image to Azure Container Registry'
+
+# Deploy Docker image to Azure App Service
+- task: AzureWebAppContainer@1
+  inputs:
+    azureSubscription: 'Azure_Pipelines'
+    appName: 'dccloudapp'
+    imageName: 'dccloudacr/dccloudapp:$(Build.BuildId)'
+    appSettings: '-DOCKER_REGISTRY_SERVER_URL=https://dccloudacr.azurecr.io -DOCKER_REGISTRY_SERVER_USERNAME=$(DOCKER_USER) -DOCKER_REGISTRY_SERVER_PASSWORD=$(DOCKER_PASS)'
+  displayName: 'Deploy Docker image to Azure App Service'
+
+# Link to the variable group for secrets
+variables:
+- group: DockerCredentials
