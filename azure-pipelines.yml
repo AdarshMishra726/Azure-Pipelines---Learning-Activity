@@ -8,7 +8,7 @@ steps:
 # Login to Azure Container Registry
 - task: AzureCLI@2
   inputs:
-    azureSubscription: 'Azure for Students'
+    azureSubscription: 'Azure_Pipelines'   # Correct service connection
     scriptType: 'bash'
     scriptLocation: 'inlineScript'
     inlineScript: |
@@ -18,7 +18,7 @@ steps:
 # Build and Push Docker image to ACR
 - task: Docker@2
   inputs:
-    containerRegistry: 'AdarshMishra726'
+    containerRegistry: 'ACRConnection'  # Use the correct Docker Registry service connection
     repository: 'dccloudacr/dccloudapp'
     command: 'buildAndPush'
     Dockerfile: '**/Dockerfile'
@@ -29,8 +29,12 @@ steps:
 # Deploy Docker image to Azure App Service
 - task: AzureWebAppContainer@1
   inputs:
-    azureSubscription: 'Azure for Students'
+    azureSubscription: 'Azure_Pipelines'   # Correct service connection
     appName: 'dccloudapp'
     imageName: 'dccloudacr/dccloudapp:$(Build.BuildId)'
     appSettings: '-DOCKER_REGISTRY_SERVER_URL=https://dccloudacr.azurecr.io -DOCKER_REGISTRY_SERVER_USERNAME=$(DOCKER_USER) -DOCKER_REGISTRY_SERVER_PASSWORD=$(DOCKER_PASS)'
   displayName: 'Deploy Docker image to Azure App Service'
+
+# Link to the variable group for secrets
+variables:
+- group: DockerCredentials
